@@ -1,49 +1,48 @@
 import { Router } from "express";
-import{ db }from "../config/db";
+import { db } from "../config/db";
 import { authenticate } from "../middleware/auth";
 
 const router = Router();
 
-/* ===============================
-   VIEW STORY
-================================ */
-router.post("/:storyId/view", authenticate, async (req: any, res) => {
-  const userId = req.user.id;
-  const storyId = req.params.storyId;
+/* =====================================
+   GET STORIES FROM FOLLOWING USERS
+===================================== */
+router.get("/", authenticate, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
 
-  await db.query(
-    "INSERT IGNORE INTO story_views (user_id, story_id) VALUES (?, ?)",
-    [userId, storyId]
-  );
+    const [stories]: any = await db.query(
+      `
+      SELECT 
+        s.id,
+        s.user_id,
+        u.username,
+        u.profile_pic,
+        s.media_url,
+        s.created_at,
+        s.expires_at
+      FROM stories s
+      JOIN users u ON u.id = s.user_id
+      WHERE 
+        s.expires_at > NOW()
+        AND (
+          s.user_id = ? 
+          OR s.user_id IN (
+            SELECT following_id 
+            FROM follows 
+            WHERE follower_id = ?
+          )
+        )
+      ORDER BY s.created_at DESC
+      `,
+      [userId, userId]
+    );
 
-  res.json({ viewed: true });
-});
-
-/* ===============================
-   GET STORY VIEWERS (OWNER ONLY)
-================================ */
-router.get("/:storyId/views", authenticate, async (req: any, res) => {
-  const storyId = req.params.storyId;
-  const userId = req.user.id;
-
-  const [owner]: any = await db.query(
-    "SELECT user_id FROM stories WHERE id=?",
-    [storyId]
-  );
-
-  if (!owner.length || owner[0].user_id !== userId) {
-    return res.status(403).json({ error: "Not allowed" });
+    res.json(stories);
+  } catch (err) {
+    console.error("GET STORIES ERROR:", err);
+    res.status(500).json({ error: "Failed to fetch stories" });
   }
-
-  const [views]: any = await db.query(
-    `SELECT u.id, u.username, u.profile_pic
-     FROM story_views sv
-     JOIN users u ON u.id = sv.user_id
-     WHERE sv.story_id = ?`,
-    [storyId]
-  );
-
-  res.json(views);
 });
 
 export default router;
