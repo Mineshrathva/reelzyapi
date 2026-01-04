@@ -35,15 +35,15 @@ app.use(xss() as any);
 app.use(express.json());
 
 // routes
-app.use("/api/users", userRoutes);
+app.use("/api/auth", userRoutes);
 app.use("/api/reels", reelsRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/posts", postActionsRouter);
-app.use("/api/reels", reelActionsRouter);
-app.use("/api/stories", storiesRoutes);
-app.use("/api/stories", storyActionsRouter);
-app.use("/api/explore", exploreRoutes);
+app.use("/api/stories_feed", storiesRoutes);
+app.use("/api/explore_home", exploreRoutes); // ✅ fixed missing slash
 app.use("/api/upload", uploadRouter);
+app.use("/api/reels_action", reelActionsRouter);
+app.use("/api/stories_action", storyActionsRouter);
 
 // error handler (LAST)
 app.use(errorHandler);
