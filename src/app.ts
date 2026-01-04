@@ -17,6 +17,10 @@ import uploadRouter from "./routes/upload";
 import storyActionsRouter from "./routes/storyActions";
 
 const app = express();
+// HEALTH CHECK (ADD THIS)
+app.get("/health", (_req, res) => {
+  res.status(200).json({ status: "ok" });
+});
 
 app.use(helmet());
 app.use(cors());
