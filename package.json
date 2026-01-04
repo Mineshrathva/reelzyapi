@@ -1,15 +1,12 @@
 {
   "name": "reel-backend",
   "version": "1.0.0",
-  "main": "src/server.ts",
+  "main": "dist/server.js",
   "license": "MIT",
   "scripts": {
-   "scripts": {
-  "dev": "ts-node src/server.ts",
-  "start": "node dist/server.js",
-  "build": "tsc"
-}
-
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
