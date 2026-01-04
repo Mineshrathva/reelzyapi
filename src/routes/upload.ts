@@ -1,38 +1,72 @@
 import { Router, Request, Response } from "express";
 import multer from "multer";
-import path from "path";
 import fs from "fs";
+import path from "path";
+import { google } from "googleapis";
 import { db } from "../config/db";
 import { authenticate } from "../middleware/auth";
 
 const router = Router();
 
 /* =========================
-   MULTER CONFIG
+   MULTER (TEMP STORAGE)
 ========================= */
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const type = req.params.type;
-
-    let folder = "uploads/posts";
-    if (type === "reel") folder = "uploads/reels";
-    if (type === "story") folder = "uploads/stories";
-
-    // ✅ Auto-create folder
-    if (!fs.existsSync(folder)) {
-      fs.mkdirSync(folder, { recursive: true });
-    }
-
-    cb(null, folder);
-  },
-  filename: (req, file, cb) => {
-    const unique =
-      Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, unique + path.extname(file.originalname));
+const upload = multer({
+  dest: "tmp/",
+  limits: {
+    fileSize: 100 * 1024 * 1024, // 100MB
   },
 });
 
-const upload = multer({ storage });
+/* =========================
+   GOOGLE DRIVE SETUP
+========================= */
+const auth = new google.auth.GoogleAuth({
+  keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS || "credentials.json",
+  scopes: ["https://www.googleapis.com/auth/drive"],
+});
+
+const drive = google.drive({ version: "v3", auth });
+
+const DRIVE_FOLDER_ID = process.env.DRIVE_FOLDER_ID!;
+
+/* =========================
+   GOOGLE DRIVE UPLOAD HELPER
+========================= */
+async function uploadToDrive(
+  filePath: string,
+  originalName: string,
+  mimeType: string
+): Promise<string> {
+  const fileName =
+    Date.now() + "-" + Math.round(Math.random() * 1e9) + path.extname(originalName);
+
+  const response = await drive.files.create({
+    requestBody: {
+      name: fileName,
+      parents: [DRIVE_FOLDER_ID],
+    },
+    media: {
+      mimeType,
+      body: fs.createReadStream(filePath),
+    },
+    fields: "id",
+  });
+
+  const fileId = response.data.id!;
+  
+  // Make file public
+  await drive.permissions.create({
+    fileId,
+    requestBody: {
+      role: "reader",
+      type: "anyone",
+    },
+  });
+
+  // Direct media URL (works in <img> & <video>)
+  return `https://drive.google.com/uc?id=${fileId}`;
+}
 
 /* =========================
    UPLOAD ROUTE
@@ -41,15 +75,12 @@ const upload = multer({ storage });
  * POST /api/upload/:type
  * type = post | reel | story
  */
-
 router.post(
   "/:type",
   authenticate,
-  upload.single("file") as any,
+  upload.single("file"),
   async (req: Request & { user?: any }, res: Response) => {
     try {
-      console.log("UPLOAD HIT");
-
       const { type } = req.params;
       const { caption, category, reel_length } = req.body;
       const user_id = req.user!.id;
@@ -58,24 +89,31 @@ router.post(
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      // Caption empty → current date
+      // Upload to Google Drive
+      const driveUrl = await uploadToDrive(
+        req.file.path,
+        req.file.originalname,
+        req.file.mimetype
+      );
+
+      // Remove temp file
+      fs.unlinkSync(req.file.path);
+
       const today = new Date().toISOString().split("T")[0];
       const finalCaption =
         caption && caption.trim() !== "" ? caption : today;
-
-      const filePath = req.file.path.replace(/\\/g, "/");
 
       /* ---------- POST ---------- */
       if (type === "post") {
         const [result]: any = await db.query(
           "INSERT INTO posts (user_id, image_url, caption) VALUES (?, ?, ?)",
-          [user_id, filePath, finalCaption]
+          [user_id, driveUrl, finalCaption]
         );
 
         return res.json({
           message: "Post uploaded successfully",
           post_id: result.insertId,
-          image_url: filePath,
+          image_url: driveUrl,
         });
       }
 
@@ -87,7 +125,7 @@ router.post(
            VALUES (?, ?, ?, ?, ?)`,
           [
             user_id,
-            filePath,
+            driveUrl,
             finalCaption,
             category || "",
             Number(reel_length) || 0,
@@ -97,25 +135,23 @@ router.post(
         return res.json({
           message: "Reel uploaded successfully",
           reel_id: result.insertId,
-          reel_url: filePath,
+          reel_url: driveUrl,
         });
       }
 
       /* ---------- STORY ---------- */
       if (type === "story") {
-        const expiresAt = new Date(
-          Date.now() + 24 * 60 * 60 * 1000
-        );
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
         const [result]: any = await db.query(
           "INSERT INTO stories (user_id, media_url, expires_at) VALUES (?, ?, ?)",
-          [user_id, filePath, expiresAt]
+          [user_id, driveUrl, expiresAt]
         );
 
         return res.json({
           message: "Story uploaded successfully",
           story_id: result.insertId,
-          media_url: filePath,
+          media_url: driveUrl,
         });
       }
 
