@@ -35,7 +35,7 @@ router.get("/", authenticate, async (req: any, res) => {
     /* User reels */
     const [reels]: any = await db.query(
       `
-      SELECT id, video_url, likes_count, views_count, created_at
+      SELECT id, reel_url, likes_count, views_count, created_at
       FROM reels
       WHERE user_id = ?
       ORDER BY created_at DESC
