@@ -29,7 +29,7 @@ app.use(xss() as any);
 app.use(express.json());
 
 // routes
-app.use("/api/auth", userRoutes);
+app.use("/api/users", userRoutes);
 app.use("/api/reels", reelsRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/posts", postActionsRouter);
