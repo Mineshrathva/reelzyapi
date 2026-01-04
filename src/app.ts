@@ -36,16 +36,16 @@ app.use(express.json());
 
 // routes
 app.use("/api/auth", userRoutes);
-app.use("/api/reels", reelsRoutes);
+app.use("/api/reels_feed", reelsRoutes);
 app.use("/api/profile", profileRoutes);
-app.use("/api/posts", postActionsRouter);
+app.use("/api/posts_action", postActionsRouter);
 app.use("/api/stories_feed", storiesRoutes);
 app.use("/api/explore_home", exploreRoutes); // ✅ fixed missing slash
 app.use("/api/upload", uploadRouter);
 app.use("/api/reels_action", reelActionsRouter);
 app.use("/api/stories_action", storyActionsRouter);
 
-// error handler (LAST)
+
 app.use(errorHandler);
 
 export default app;   // 🔥 THIS LINE IS REQUIRED
