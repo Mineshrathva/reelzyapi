@@ -12,15 +12,35 @@ router.post(
   authenticate,
   async (req: Request & { user?: any }, res: Response) => {
     try {
-      const userId = req.user!.id;
+      const userId = req.user?.id;
       const postId = Number(req.params.postId);
 
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      if (!postId || isNaN(postId)) {
+        return res.status(400).json({ error: "Invalid post id" });
+      }
+
+      // ✅ 1️⃣ Check post exists
+      const [post]: any = await db.query(
+        "SELECT id FROM posts WHERE id = ?",
+        [postId]
+      );
+
+      if (post.length === 0) {
+        return res.status(404).json({ error: "Post not found" });
+      }
+
+      // ✅ 2️⃣ Check if already liked
       const [exists]: any = await db.query(
         "SELECT 1 FROM post_likes WHERE user_id=? AND post_id=?",
         [userId, postId]
       );
 
       if (exists.length) {
+        // UNLIKE
         await db.query(
           "DELETE FROM post_likes WHERE user_id=? AND post_id=?",
           [userId, postId]
@@ -34,6 +54,7 @@ router.post(
         return res.json({ liked: false });
       }
 
+      // LIKE
       await db.query(
         "INSERT INTO post_likes (user_id, post_id) VALUES (?, ?)",
         [userId, postId]
@@ -44,13 +65,20 @@ router.post(
         [postId]
       );
 
-      res.json({ liked: true });
-    } catch (err) {
-      console.error("POST LIKE ERROR:", err);
-      res.status(500).json({ error: "Like failed" });
+      return res.json({ liked: true });
+
+    } catch (err: any) {
+      console.error("POST LIKE ERROR FULL:", err);
+
+      return res.status(500).json({
+        error: "Like failed",
+        code: err.code,
+        message: err.message,
+      });
     }
   }
 );
+;
 
 /* ===============================
    COMMENT POST
