@@ -1,12 +1,12 @@
 import { Router } from "express";
 import{ db }from "../config/db";
-
+import { authenticate } from "../middleware/auth";
 const router = Router();
 
 /* ===============================
    EXPLORE FEED WITH PAGINATION
 ================================ */
-router.get("/", async (req, res) => {
+router.get("/",authenticate, async (req, res) => {
   try {
     // ✅ Get page & limit from query string
     let page = parseInt(req.query.page as string) || 1;
@@ -18,7 +18,7 @@ router.get("/", async (req, res) => {
         SELECT
           r.id,
           r.user_id,
-          r.video_url AS media_url,
+          r.reel_url AS media_url,
           'reel' AS type,
           r.views_count,
           r.likes_count,
