@@ -1,16 +1,15 @@
 import { Router } from "express";
-import{ db } from "../config/db";
+import { db } from "../config/db";
 import { authenticate } from "../middleware/auth";
 
 const router = Router();
 
 /* ===============================
-   PROFILE PAGE
+   MY PROFILE (FROM JWT TOKEN)
 ================================ */
-router.get("/:userId", authenticate, async (req: any, res) => {
+router.get("/", authenticate, async (req: any, res) => {
   try {
-    const viewerId = req.user.id;
-    const profileUserId = Number(req.params.userId);
+    const userId = req.user.id; // ✅ from JWT
 
     /* Profile info + stats */
     const [profileRows]: any = await db.query(
@@ -22,15 +21,11 @@ router.get("/:userId", authenticate, async (req: any, res) => {
         u.profile_pic,
         (SELECT COUNT(*) FROM follows f WHERE f.following_id = u.id) AS followers_count,
         (SELECT COUNT(*) FROM follows f WHERE f.follower_id = u.id) AS following_count,
-        (SELECT COUNT(*) FROM reels r WHERE r.user_id = u.id) AS posts_count,
-        EXISTS (
-          SELECT 1 FROM follows f
-          WHERE f.follower_id = ? AND f.following_id = u.id
-        ) AS is_following
+        (SELECT COUNT(*) FROM reels r WHERE r.user_id = u.id) AS posts_count
       FROM users u
       WHERE u.id = ?
       `,
-      [viewerId, profileUserId]
+      [userId]
     );
 
     if (!profileRows.length) {
@@ -46,16 +41,16 @@ router.get("/:userId", authenticate, async (req: any, res) => {
       ORDER BY created_at DESC
       LIMIT 20
       `,
-      [profileUserId]
+      [userId]
     );
 
     res.json({
       profile: profileRows[0],
-      reels
+      reels,
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("PROFILE ERROR:", err);
     res.status(500).json({ error: "Profile page error" });
   }
 });
