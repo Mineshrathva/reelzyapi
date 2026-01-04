@@ -22,16 +22,15 @@ const upload = multer({
    GOOGLE DRIVE SETUP
 ========================= */
 const auth = new google.auth.GoogleAuth({
-  keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS || "credentials.json",
+  credentials: JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON!),
   scopes: ["https://www.googleapis.com/auth/drive"],
 });
 
 const drive = google.drive({ version: "v3", auth });
-
 const DRIVE_FOLDER_ID = process.env.DRIVE_FOLDER_ID!;
 
 /* =========================
-   GOOGLE DRIVE UPLOAD HELPER
+   GOOGLE DRIVE UPLOAD
 ========================= */
 async function uploadToDrive(
   filePath: string,
@@ -39,7 +38,10 @@ async function uploadToDrive(
   mimeType: string
 ): Promise<string> {
   const fileName =
-    Date.now() + "-" + Math.round(Math.random() * 1e9) + path.extname(originalName);
+    Date.now() +
+    "-" +
+    Math.round(Math.random() * 1e9) +
+    path.extname(originalName);
 
   const response = await drive.files.create({
     requestBody: {
@@ -55,7 +57,7 @@ async function uploadToDrive(
 
   const fileId = response.data.id!;
   
-  // Make file public
+  // make public
   await drive.permissions.create({
     fileId,
     requestBody: {
@@ -64,7 +66,6 @@ async function uploadToDrive(
     },
   });
 
-  // Direct media URL (works in <img> & <video>)
   return `https://drive.google.com/uc?id=${fileId}`;
 }
 
@@ -78,26 +79,36 @@ async function uploadToDrive(
 router.post(
   "/:type",
   authenticate,
-  upload.single("file"),
+  upload.fields([
+    { name: "file", maxCount: 1 },
+    { name: "video", maxCount: 1 },
+    { name: "image", maxCount: 1 },
+  ]),
   async (req: Request & { user?: any }, res: Response) => {
     try {
       const { type } = req.params;
       const { caption, category, reel_length } = req.body;
       const user_id = req.user!.id;
 
-      if (!req.file) {
+      const files: any = req.files;
+
+      const uploadedFile =
+        files?.file?.[0] ||
+        files?.video?.[0] ||
+        files?.image?.[0];
+
+      if (!uploadedFile) {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      // Upload to Google Drive
       const driveUrl = await uploadToDrive(
-        req.file.path,
-        req.file.originalname,
-        req.file.mimetype
+        uploadedFile.path,
+        uploadedFile.originalname,
+        uploadedFile.mimetype
       );
 
-      // Remove temp file
-      fs.unlinkSync(req.file.path);
+      // delete temp file
+      fs.unlinkSync(uploadedFile.path);
 
       const today = new Date().toISOString().split("T")[0];
       const finalCaption =
