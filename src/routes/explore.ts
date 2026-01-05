@@ -17,6 +17,7 @@ router.get("/", authenticate, async (req, res) => {
       SELECT
         p.id,
         p.user_id,
+        u.username,                 -- ✅ ADD THIS
         p.image_url AS media_url,
         'post' AS type,
         0 AS views_count,
@@ -29,6 +30,7 @@ router.get("/", authenticate, async (req, res) => {
         ) AS score,
         p.created_at
       FROM posts p
+      JOIN users u ON u.id = p.user_id   -- ✅ ADD THIS
       ORDER BY score DESC
       LIMIT ? OFFSET ?
     `;
