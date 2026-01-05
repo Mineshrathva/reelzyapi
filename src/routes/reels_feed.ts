@@ -15,6 +15,7 @@ router.get("/feed", authenticate, async (req: any, res) => {
       SELECT 
         r.*,
         u.username,
+        u.profile_pic,
         (
           (r.views_count * 0.2) +
           (r.likes_count * 2) +
@@ -52,7 +53,8 @@ router.get("/following", authenticate, async (req: any, res) => {
     `
     SELECT 
       r.*,
-      u.username
+      u.username,
+      u.profile_pic
     FROM reels r
     JOIN users u ON u.id = r.user_id        -- ✅ ADD THIS
     JOIN follows f ON f.following_id = r.user_id
@@ -77,7 +79,8 @@ router.get("/trending", async (_req, res) => {
   const [rows] = await db.query(`
     SELECT 
       r.*,
-      u.username
+      u.username,
+      u.profile_pic
     FROM reels r
     JOIN users u ON u.id = r.user_id        -- ✅ ADD THIS
     WHERE r.created_at > NOW() - INTERVAL 24 HOUR
