@@ -17,7 +17,8 @@ router.get("/", authenticate, async (req, res) => {
       SELECT
         p.id,
         p.user_id,
-        u.username,                 -- ✅ ADD THIS
+        u.username,
+        u.profile_pic,-- ✅ ADD THIS
         p.image_url AS media_url,
         'post' AS type,
         0 AS views_count,
