@@ -7,6 +7,8 @@ const router = Router();
 /* ===============================
    LIKE / UNLIKE POST
 ================================ */
+
+
 router.post(
   "/:postId/like",
   authenticate,
@@ -16,28 +18,30 @@ router.post(
       const postId = Number(req.params.postId);
 
       if (!userId) {
-        return res.status(401).json({ error: "Unauthorized" });
+        return res.status(401).json({ success: false, error: "Unauthorized" });
       }
 
       if (!postId || isNaN(postId)) {
-        return res.status(400).json({ error: "Invalid post id" });
+        return res.status(400).json({ success: false, error: "Invalid post id" });
       }
 
-      // ✅ 1️⃣ Check post exists
+      // 1️⃣ Check post exists
       const [post]: any = await db.query(
         "SELECT id FROM posts WHERE id = ?",
         [postId]
       );
 
-      if (post.length === 0) {
-        return res.status(404).json({ error: "Post not found" });
+      if (!post.length) {
+        return res.status(404).json({ success: false, error: "Post not found" });
       }
 
-      // ✅ 2️⃣ Check if already liked
+      // 2️⃣ Check if already liked
       const [exists]: any = await db.query(
         "SELECT 1 FROM post_likes WHERE user_id=? AND post_id=?",
         [userId, postId]
       );
+
+      let liked: boolean;
 
       if (exists.length) {
         // UNLIKE
@@ -51,34 +55,44 @@ router.post(
           [postId]
         );
 
-        return res.json({ liked: false });
+        liked = false;
+      } else {
+        // LIKE
+        await db.query(
+          "INSERT INTO post_likes (user_id, post_id) VALUES (?, ?)",
+          [userId, postId]
+        );
+
+        await db.query(
+          "UPDATE posts SET likes_count = likes_count + 1 WHERE id=?",
+          [postId]
+        );
+
+        liked = true;
       }
 
-      // LIKE
-      await db.query(
-        "INSERT INTO post_likes (user_id, post_id) VALUES (?, ?)",
-        [userId, postId]
-      );
-
-      await db.query(
-        "UPDATE posts SET likes_count = likes_count + 1 WHERE id=?",
+      // 3️⃣ Get updated likes count
+      const [[countRow]]: any = await db.query(
+        "SELECT likes_count FROM posts WHERE id=?",
         [postId]
       );
 
-      return res.json({ liked: true });
+      return res.json({
+        success: true,
+        liked,                         // ✅ BOOLEAN
+        likes_count: Number(countRow.likes_count) // ✅ NUMBER
+      });
 
     } catch (err: any) {
-      console.error("POST LIKE ERROR FULL:", err);
-
+      console.error("POST LIKE ERROR:", err);
       return res.status(500).json({
+        success: false,
         error: "Like failed",
-        code: err.code,
-        message: err.message,
       });
     }
   }
 );
-;
+
 
 /* ===============================
    COMMENT POST
