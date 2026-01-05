@@ -68,7 +68,11 @@ router.get("/trending", async (_req, res) => {
     LIMIT 20
   `);
 
-  res.json(rows);
+ res.json({
+  success: true,
+  data: rows
+});
+
 });
 
 export default router;
