@@ -29,7 +29,10 @@ router.get("/feed", authenticate, async (req: any, res) => {
     `;
 
     const [rows] = await db.query(sql, [userId]);
-    res.json(rows);
+    res.json({
+  success: true,
+  data: rows
+});
 
   } catch (err) {
     console.error(err);
@@ -53,7 +56,11 @@ router.get("/following", authenticate, async (req: any, res) => {
     [userId]
   );
 
-  res.json(rows);
+  res.json({
+  success: true,
+  data: rows
+});
+
 });
 
 /* ===============================
