@@ -15,6 +15,7 @@ import storiesRoutes from "./routes/stories";
 import exploreRoutes from "./routes/explore";
 import uploadRouter from "./routes/upload";
 import storyActionsRouter from "./routes/storyActions";
+import storyDetailsRoutes from "./routes/storyDetails";
 
 const app = express();
 // HEALTH CHECK (ADD THIS)
@@ -44,6 +45,7 @@ app.use("/api/explore_home", exploreRoutes); // ✅ fixed missing slash
 app.use("/api/upload", uploadRouter);
 app.use("/api/reels_action", reelActionsRouter);
 app.use("/api/stories_action", storyActionsRouter);
+app.use("/api/story-details", storyDetailsRoutes);
 
 
 app.use(errorHandler);
