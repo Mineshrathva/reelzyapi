@@ -20,12 +20,8 @@ router.get("/", authenticate, async (req: any, res) => {
     u.name,
     u.bio,
     u.profile_pic,
-
-    /* followers */
-    (SELECT COUNT(*) FROM follows f WHERE f.following_id = u.id) AS followers_count,
-
-    /* following */
-    (SELECT COUNT(*) FROM follows f WHERE f.follower_id = u.id) AS following_count,
+    u.followers_count,
+    u.following_count,
 
     /* total posts = posts + reels */
     (
