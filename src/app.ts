@@ -39,7 +39,7 @@ app.use(express.json());
 // routes
 app.use("/api/auth", userRoutes);
 app.use("/api/reels", reelsRoutes);
-app.use("/api/myprofile", profileRoutes);
+app.use("/api/users/profile", profileRoutes);
 app.use("/api/posts_action", postActionsRouter);
 app.use("/api/stories", storiesRoutes);
 app.use("/api/posts", exploreRoutes); // ✅ fixed missing slash
