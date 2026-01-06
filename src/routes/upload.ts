@@ -93,7 +93,7 @@ router.post(
             const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
             const [r]: any = await db.query(
-              "INSERT INTO stories (user_id, media_url,) VALUES (?, ?)",
+              "INSERT INTO stories (user_id, media_url) VALUES (?, ?)",
               [user_id, mediaUrl,]
             );
 
