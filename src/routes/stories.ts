@@ -78,3 +78,5 @@ router.get("/", authenticate, async (req: any, res) => {
     res.status(500).json({ error: "Failed to fetch stories" });
   }
 });
+
+export default router;
