@@ -40,7 +40,7 @@ app.use("/api/auth", userRoutes);
 app.use("/api/reels", reelsRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/posts_action", postActionsRouter);
-app.use("/api/stories_feed", storiesRoutes);
+app.use("/api/stories", storiesRoutes);
 app.use("/api/explore_home", exploreRoutes); // ✅ fixed missing slash
 app.use("/api/upload", uploadRouter);
 app.use("/api/reels_action", reelActionsRouter);
