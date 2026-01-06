@@ -5,61 +5,65 @@ import { db } from "../config/db";
 const router = Router();
 
 /* =====================================================
-   FOR YOU FEED (Algorithm + Reposts)
+   FOR YOU FEED (Algorithm + Reposts) — FIXED
 ===================================================== */
 router.get("/feed", authenticate, async (req: any, res) => {
   try {
     const userId = req.user.id;
 
     const sql = `
-      SELECT 
+      SELECT
         r.*,
         u.username,
         u.profile_pic,
 
-        -- repost info
-        IF(rr.user_id IS NOT NULL, 1, 0) AS is_reposted,
+        -- repost flag
+        EXISTS (
+          SELECT 1
+          FROM reel_repost rr
+          WHERE rr.reel_id = r.id
+        ) AS is_reposted,
 
         (
           (r.views_count * 0.2) +
           (r.likes_count * 2) +
           (r.comments_count * 3) +
-          IF(f.follower_id IS NOT NULL, 5, 0) +
-          IF(rr.user_id IS NOT NULL, 8, 0) +
+
+          -- follow boost
+          EXISTS (
+            SELECT 1 FROM follows f
+            WHERE f.following_id = r.user_id
+              AND f.follower_id = ?
+          ) * 5 +
+
+          -- repost boost
+          EXISTS (
+            SELECT 1 FROM reel_repost rr
+            WHERE rr.reel_id = r.id
+          ) * 8 +
+
+          -- freshness
           GREATEST(0, 24 - TIMESTAMPDIFF(HOUR, r.created_at, NOW()))
         ) AS score
 
       FROM reels r
+      JOIN users u ON u.id = r.user_id
 
-      JOIN users u 
-        ON u.id = r.user_id
-
-      LEFT JOIN follows f
-        ON f.following_id = r.user_id
-       AND f.follower_id = ?
-
-      LEFT JOIN reel_repost rr
-        ON rr.reel_id = r.id
-
-      GROUP BY r.id
       ORDER BY score DESC
       LIMIT 20
     `;
 
     const [rows] = await db.query(sql, [userId]);
 
-    res.json({
-      success: true,
-      data: rows,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Feed error" });
+    res.json({ success: true, data: rows });
+  } catch (error: any) {
+    console.error("FEED ERROR:", error.sqlMessage || error);
+    res.status(500).json({ success: false, message: error.sqlMessage });
   }
 });
 
 /* =====================================================
-   FOLLOWING FEED (Original + Reposted by Following)
+   FOLLOWING FEED (Original + Reposted by Following) — FIXED
 ===================================================== */
 router.get("/following", authenticate, async (req: any, res) => {
   try {
@@ -71,73 +75,73 @@ router.get("/following", authenticate, async (req: any, res) => {
         u.username,
         u.profile_pic
       FROM reels r
+      JOIN users u ON u.id = r.user_id
 
-      JOIN users u 
-        ON u.id = r.user_id
-
-      LEFT JOIN reel_repost rr
-        ON rr.reel_id = r.id
-
-      JOIN follows f
-        ON (
-             f.following_id = r.user_id
-          OR f.following_id = rr.user_id
+      WHERE
+        r.user_id IN (
+          SELECT following_id
+          FROM follows
+          WHERE follower_id = ?
         )
-       AND f.follower_id = ?
+        OR r.id IN (
+          SELECT rr.reel_id
+          FROM reel_repost rr
+          WHERE rr.user_id IN (
+            SELECT following_id
+            FROM follows
+            WHERE follower_id = ?
+          )
+        )
 
       ORDER BY r.created_at DESC
       LIMIT 20
     `;
 
-    const [rows] = await db.query(sql, [userId]);
+    const [rows] = await db.query(sql, [userId, userId]);
 
-    res.json({
-      success: true,
-      data: rows,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Following feed error" });
+    res.json({ success: true, data: rows });
+  } catch (error: any) {
+    console.error("FOLLOWING ERROR:", error.sqlMessage || error);
+    res.status(500).json({ success: false, message: error.sqlMessage });
   }
 });
 
 /* =====================================================
-   TRENDING / EXPLORE (Repost Boost)
+   TRENDING / EXPLORE (Repost Boost) — FIXED
 ===================================================== */
 router.get("/trending", async (_req, res) => {
   try {
     const sql = `
-      SELECT 
+      SELECT
         r.*,
         u.username,
         u.profile_pic,
-        COUNT(rr.reel_id) AS repost_count
+
+        (
+          SELECT COUNT(*)
+          FROM reel_repost rr
+          WHERE rr.reel_id = r.id
+        ) AS repost_count
+
       FROM reels r
-
-      JOIN users u 
-        ON u.id = r.user_id
-
-      LEFT JOIN reel_repost rr
-        ON rr.reel_id = r.id
+      JOIN users u ON u.id = r.user_id
 
       WHERE r.created_at > NOW() - INTERVAL 24 HOUR
-      GROUP BY r.id
-      ORDER BY 
+
+      ORDER BY
         repost_count DESC,
         r.views_count DESC,
         r.likes_count DESC
+
       LIMIT 20
     `;
 
     const [rows] = await db.query(sql);
 
-    res.json({
-      success: true,
-      data: rows,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Trending feed error" });
+    res.json({ success: true, data: rows });
+  } catch (error: any) {
+    console.error("TRENDING ERROR:", error.sqlMessage || error);
+    res.status(500).json({ success: false, message: error.sqlMessage });
   }
 });
 
