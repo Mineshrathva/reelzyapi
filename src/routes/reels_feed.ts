@@ -7,7 +7,7 @@ const router = Router();
 /* =====================================================
    FOR YOU FEED (Algorithm + Reposts) — FIXED
 ===================================================== */
-router.get("/feed", authenticate, async (req: any, res) => {
+router.get("/", authenticate, async (req: any, res) => {
   try {
     const userId = req.user.id;
 
