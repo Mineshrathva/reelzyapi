@@ -23,7 +23,7 @@ const upload = multer({
 router.post(
   "/:type",
   authenticate,
-  upload.single("file"),
+  upload.single("media"), // ✅ FIXED
   async (req: Request & { user?: any }, res: Response) => {
     try {
       const { type } = req.params;
@@ -34,10 +34,9 @@ router.post(
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      /* ---------- Upload to Cloudinary ---------- */
-      const result = await cloudinary.uploader.upload_stream(
+      const uploadStream = cloudinary.uploader.upload_stream(
         {
-          resource_type: "auto", // image / video auto
+          resource_type: "auto",
           folder: `reelzy/${type}`,
         },
         async (error, uploadResult) => {
@@ -47,12 +46,10 @@ router.post(
           }
 
           const mediaUrl = uploadResult.secure_url;
-
           const today = new Date().toISOString().split("T")[0];
           const finalCaption =
             caption && caption.trim() !== "" ? caption : today;
 
-          /* ---------- POST ---------- */
           if (type === "post") {
             const [r]: any = await db.query(
               "INSERT INTO posts (user_id, image_url, caption) VALUES (?, ?, ?)",
@@ -66,7 +63,6 @@ router.post(
             });
           }
 
-          /* ---------- REEL ---------- */
           if (type === "reel") {
             const [r]: any = await db.query(
               `INSERT INTO reels
@@ -88,7 +84,6 @@ router.post(
             });
           }
 
-          /* ---------- STORY ---------- */
           if (type === "story") {
             const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
@@ -108,8 +103,7 @@ router.post(
         }
       );
 
-      // write buffer to stream
-      result.end(req.file.buffer);
+      uploadStream.end(req.file.buffer);
     } catch (err) {
       console.error("UPLOAD ERROR:", err);
       return res.status(500).json({ error: "Upload failed" });
