@@ -16,6 +16,7 @@ import exploreRoutes from "./routes/explore";
 import uploadRouter from "./routes/upload";
 import storyActionsRouter from "./routes/storyActions";
 import storyDetailsRoutes from "./routes/storyDetails";
+import profileOtherRoutes from "./routes/profileOther";
 
 const app = express();
 // HEALTH CHECK (ADD THIS)
@@ -38,7 +39,7 @@ app.use(express.json());
 // routes
 app.use("/api/auth", userRoutes);
 app.use("/api/reels", reelsRoutes);
-app.use("/api/profile", profileRoutes);
+app.use("/api/myprofile", profileRoutes);
 app.use("/api/posts_action", postActionsRouter);
 app.use("/api/stories", storiesRoutes);
 app.use("/api/explore_home", exploreRoutes); // ✅ fixed missing slash
@@ -46,7 +47,7 @@ app.use("/api/upload", uploadRouter);
 app.use("/api/reels_action", reelActionsRouter);
 app.use("/api/stories_action", storyActionsRouter);
 app.use("/api/story-details", storyDetailsRoutes);
-
+app.use("/api/profile", profileOtherRoutes);
 
 app.use(errorHandler);
 
