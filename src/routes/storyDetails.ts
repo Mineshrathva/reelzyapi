@@ -7,7 +7,7 @@ const router = Router();
 /* =====================================
    GET ALL STORIES OF ONE USER
 ===================================== */
-router.get("/:userId", authenticate, async (req: any, res) => {
+router.get("/user/:userId", authenticate, async (req: any, res) => {
   try {
     const viewerId = req.user.id;
     const storyUserId = req.params.userId;
@@ -41,7 +41,7 @@ router.get("/:userId", authenticate, async (req: any, res) => {
     res.json(stories);
   } catch (err) {
     console.error("GET STORY DETAILS ERROR:", err);
-    res.status(500).json({ error: "Failed to fetch stories" });
+    res.status(500).json({ error: "Failed to fetch user stories" });
   }
 });
 
