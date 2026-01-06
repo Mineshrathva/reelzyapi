@@ -17,6 +17,7 @@ router.get("/", authenticate, async (req: any, res) => {
   SELECT
     u.id,
     u.username,
+    u.name,
     u.bio,
     u.profile_pic,
 
