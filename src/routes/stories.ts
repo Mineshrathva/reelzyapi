@@ -18,10 +18,8 @@ router.get("/", authenticate, async (req: any, res) => {
         u.username,
         u.profile_pic,
 
-        -- latest story time
         MAX(s.created_at) AS latest_story_time,
 
-        -- unseen logic
         SUM(
           CASE 
             WHEN sv.story_id IS NULL THEN 1 
@@ -29,7 +27,6 @@ router.get("/", authenticate, async (req: any, res) => {
           END
         ) AS unseen_count,
 
-        -- my story flag
         CASE 
           WHEN u.id = ? THEN 1 
           ELSE 0 
@@ -40,7 +37,7 @@ router.get("/", authenticate, async (req: any, res) => {
 
       LEFT JOIN story_views sv
         ON sv.story_id = s.id
-        AND sv.viewer_id = ?
+        AND sv.user_id = ?
 
       WHERE
         s.expires_at > NOW()
@@ -70,7 +67,7 @@ router.get("/", authenticate, async (req: any, res) => {
         profile_pic: r.profile_pic,
         is_me: !!r.is_me,
         has_unseen: r.unseen_count > 0,
-        latest_story_time: r.latest_story_time
+        latest_story_time: r.latest_story_time,
       }))
     );
   } catch (err) {
