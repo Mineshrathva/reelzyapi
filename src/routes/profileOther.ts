@@ -9,8 +9,8 @@ const router = Router();
 ===================================== */
 router.get("/:userId", authenticate, async (req: any, res) => {
   try {
-    const viewerId = req.user.id;          // logged-in user
-    const profileUserId = req.params.userId; // whose profile
+    const viewerId = req.user.id;              // logged-in user
+    const profileUserId = req.params.userId;   // whose profile
 
     /* =========================
        USER BASIC INFO + STATS
@@ -117,6 +117,56 @@ router.get("/:userId", authenticate, async (req: any, res) => {
   } catch (err) {
     console.error("OTHER PROFILE ERROR:", err);
     res.status(500).json({ error: "Failed to fetch profile" });
+  }
+});
+
+/* =====================================
+   FOLLOW USER
+===================================== */
+router.post("/:userId/follow", authenticate, async (req: any, res) => {
+  try {
+    const followerId = req.user.id;       // me
+    const followingId = req.params.userId; // other user
+
+    if (followerId == followingId) {
+      return res.status(400).json({ error: "You cannot follow yourself" });
+    }
+
+    await db.query(
+      `
+      INSERT IGNORE INTO follows (follower_id, following_id)
+      VALUES (?, ?)
+      `,
+      [followerId, followingId]
+    );
+
+    res.json({ success: true, is_following: true });
+  } catch (err) {
+    console.error("FOLLOW ERROR:", err);
+    res.status(500).json({ error: "Failed to follow user" });
+  }
+});
+
+/* =====================================
+   UNFOLLOW USER
+===================================== */
+router.delete("/:userId/follow", authenticate, async (req: any, res) => {
+  try {
+    const followerId = req.user.id;
+    const followingId = req.params.userId;
+
+    await db.query(
+      `
+      DELETE FROM follows
+      WHERE follower_id = ? AND following_id = ?
+      `,
+      [followerId, followingId]
+    );
+
+    res.json({ success: true, is_following: false });
+  } catch (err) {
+    console.error("UNFOLLOW ERROR:", err);
+    res.status(500).json({ error: "Failed to unfollow user" });
   }
 });
 
