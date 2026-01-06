@@ -13,20 +13,30 @@ router.get("/", authenticate, async (req: any, res) => {
 
     /* Profile info + stats */
     const [profileRows]: any = await db.query(
-      `
-      SELECT
-        u.id,
-        u.username,
-        u.bio,
-        u.profile_pic,
-        (SELECT COUNT(*) FROM follows f WHERE f.following_id = u.id) AS followers_count,
-        (SELECT COUNT(*) FROM follows f WHERE f.follower_id = u.id) AS following_count,
-        (SELECT COUNT(*) FROM reels r WHERE r.user_id = u.id) AS posts_count
-      FROM users u
-      WHERE u.id = ?
-      `,
-      [userId]
-    );
+  `
+  SELECT
+    u.id,
+    u.username,
+    u.bio,
+    u.profile_pic,
+
+    /* followers */
+    (SELECT COUNT(*) FROM follows f WHERE f.following_id = u.id) AS followers_count,
+
+    /* following */
+    (SELECT COUNT(*) FROM follows f WHERE f.follower_id = u.id) AS following_count,
+
+    /* total posts = posts + reels */
+    (
+      (SELECT COUNT(*) FROM posts p WHERE p.user_id = u.id) +
+      (SELECT COUNT(*) FROM reels r WHERE r.user_id = u.id)
+    ) AS posts_count
+
+  FROM users u
+  WHERE u.id = ?
+  `,
+  [userId]
+);
 
     if (!profileRows.length) {
       return res.status(404).json({ error: "User not found" });
