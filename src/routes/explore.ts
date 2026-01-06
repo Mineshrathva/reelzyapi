@@ -9,8 +9,6 @@ const router = Router();
 ===================================================== */
 router.get("/", authenticate, async (req: any, res) => {
   try {
-    const userId = req.user.id;
-
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const offset = (page - 1) * limit;
@@ -24,8 +22,10 @@ router.get("/", authenticate, async (req: any, res) => {
         p.image_url AS media_url,
         'post' AS type,
 
-        -- repost info
-        IF(pr.user_id IS NOT NULL, 1, 0) AS is_reposted,
+        EXISTS (
+          SELECT 1 FROM post_repost pr
+          WHERE pr.post_id = p.id
+        ) AS is_reposted,
 
         0 AS views_count,
         p.likes_count,
@@ -34,21 +34,17 @@ router.get("/", authenticate, async (req: any, res) => {
         (
           (p.likes_count * 2) +
           (p.comments_count * 3) +
-          IF(pr.user_id IS NOT NULL, 6, 0) +   -- 🔥 repost boost
+          EXISTS (
+            SELECT 1 FROM post_repost pr
+            WHERE pr.post_id = p.id
+          ) * 6 +
           GREATEST(0, 24 - TIMESTAMPDIFF(HOUR, p.created_at, NOW()))
         ) AS score,
 
         p.created_at
 
       FROM posts p
-
-      JOIN users u
-        ON u.id = p.user_id
-
-      LEFT JOIN post_repost pr
-        ON pr.post_id = p.id
-
-      GROUP BY p.id
+      JOIN users u ON u.id = p.user_id
       ORDER BY score DESC
       LIMIT ? OFFSET ?
     `;
@@ -61,10 +57,14 @@ router.get("/", authenticate, async (req: any, res) => {
       limit,
       data: rows,
     });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Explore feed error" });
+  } catch (error: any) {
+    console.error("Explore Feed SQL Error:", error.sqlMessage || error);
+    res.status(500).json({
+      success: false,
+      message: error.sqlMessage || "Explore feed error",
+    });
   }
 });
+
 
 export default router;
