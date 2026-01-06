@@ -7,7 +7,7 @@ const router = Router();
 /* ===============================
    EXPLORE FEED (POSTS ONLY)
 ================================ */
-router.get("/", authenticate, async (req: any, res) => {
+router.post("/", authenticate, async (req: any, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
