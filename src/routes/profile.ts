@@ -43,10 +43,20 @@ router.get("/", authenticate, async (req: any, res) => {
       `,
       [userId]
     );
-
+    const [posts]: any = await db.query(
+      `
+      SELECT id, image_url, likes_count, views_count, created_at
+      FROM posts
+      WHERE user_id = ?
+      ORDER BY created_at DESC
+      LIMIT 20
+      `,
+      [userId]
+    );
     res.json({
       profile: profileRows[0],
       reels,
+      posts,
     });
 
   } catch (err) {
