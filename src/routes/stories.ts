@@ -77,7 +77,7 @@ router.get("/", authenticate, async (req: any, res) => {
         username: r.username,
         profile_pic: r.profile_pic,
         is_me: !!r.is_me,
-         story_url: 
+        story_url: r.story_url,
         has_unseen: r.unseen_count > 0,
         latest_story_time: r.latest_story_time,
       }))
