@@ -18,13 +18,23 @@ import storyActionsRouter from "./routes/storyActions";
 import storySeenRouter from "./routes/storyViews";
 import profileOtherRoutes from "./routes/profileOther";
 
-// DM SYSTEM (newly added)
+// DM SYSTEM
 import chatRoutes from "./routes/chat.routes";
 import messageRoutes from "./routes/message.routes";
 
 import errorHandler from "./middleware/errorHandler";
 
 const app = express();
+
+// =========================
+// 🚀 GLOBAL ANTI-CACHE FIX
+// =========================
+app.use((req, res, next) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  next();
+});
 
 // =========================
 // HEALTH CHECK
@@ -39,7 +49,7 @@ app.get("/env-check", (_req, res) => {
 });
 
 // =========================
-// SECURITY MIDDLEWARES
+// SECURITY
 // =========================
 app.use(helmet());
 app.use(cors());
@@ -48,29 +58,29 @@ app.use(xss() as any);
 app.use(express.json());
 
 // =========================
-// API ROUTES (CLEAN ORDER)
+// ROUTES
 // =========================
 
 // AUTH
 app.use("/api/auth", userRoutes);
 
 // PROFILE
-app.use("/api/users/profile", profileRoutes);       // self profile
-app.use("/api/profile", profileOtherRoutes);        // other user profile
+app.use("/api/users/profile", profileRoutes);
+app.use("/api/profile", profileOtherRoutes);
 
 // POSTS
 app.use("/api/posts", postActionsRouter);
-app.use("/api/posts", exploreRoutes);               // explore feed
+app.use("/api/posts", exploreRoutes);
 
 // REELS
 app.use("/api/reels", reelsFeedRoutes);
 app.use("/api/reels", reelActionsRouter);
 
-// STORIES (merged cleanly)
-app.use("/api/stories", storiesFeedRoutes);         // stories listing
-app.use("/api/stories", storyDetailsRoutes);        // user story slides
-app.use("/api/stories", storyActionsRouter);        // story actions (delete etc.)
-app.use("/api/stories", storySeenRouter);           // seen/mark view
+// STORIES
+app.use("/api/stories", storiesFeedRoutes);
+app.use("/api/stories", storyDetailsRoutes);
+app.use("/api/stories", storyActionsRouter);
+app.use("/api/stories", storySeenRouter);
 
 // UPLOAD
 app.use("/api/upload", uploadRouter);
@@ -79,7 +89,7 @@ app.use("/api/upload", uploadRouter);
 app.use("/api/chat", chatRoutes);
 app.use("/api/messages", messageRoutes);
 
-// ERROR HANDLER
+// ERRORS
 app.use(errorHandler);
 
 export default app;
