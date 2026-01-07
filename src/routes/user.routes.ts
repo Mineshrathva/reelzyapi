@@ -11,7 +11,10 @@ router.post("/register", registerValidator, register);
 // Login user
 router.post("/login", loginValidator, login);
 
-// Get logged-in user profile
-router.get("/me", authenticate, getProfile);
+// Get logged-in user profile  🔥 FIXED (no more 304 caching)
+router.get("/me", authenticate, (req, res, next) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  next();
+}, getProfile);
 
 export default router;
