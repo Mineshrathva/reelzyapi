@@ -41,7 +41,7 @@ app.use(express.json());
 app.use("/api/auth", userRoutes);
 app.use("/api/reels", reelsRoutes);
 app.use("/api/users/profile", profileRoutes);
-app.use("/api/posts_action", postActionsRouter);
+app.use("/api/posts", postActionsRouter);
 app.use("/api/stories", storiesRoutes);
 app.use("/api/stories", storyDetailsRoutes);
 app.use("/api/posts", exploreRoutes); // ✅ fixed missing slash
