@@ -46,7 +46,7 @@ app.use("/api/stories", storiesRoutes);
 app.use("/api/stories", storyDetailsRoutes);
 app.use("/api/posts", exploreRoutes); // ✅ fixed missing slash
 app.use("/api/upload", uploadRouter);
-app.use("/api/reels_action", reelActionsRouter);
+app.use("/api/reels", reelActionsRouter);
 app.use("/api/stories_action", storyActionsRouter);
 app.use("/api/story-details", storyDetailsRoutes);
 app.use("/api/profile", profileOtherRoutes);
