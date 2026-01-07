@@ -45,11 +45,21 @@ router.get("/:chatId", authenticate, async (req: any, res) => {
 /* ============================
    SEND MESSAGE
 =============================== */
+/* ============================
+   SEND MESSAGE (AUTO-GENERATE chat_id)
+=============================== */
 router.post("/send", authenticate, async (req: any, res) => {
   try {
-    const { chat_id, receiver_id, message, media_url, type, duration } = req.body;
+    const { receiver_id, message, media_url, type, duration } = req.body;
     const sender_id = req.user.id;
 
+    // --- AUTO GENERATE CHAT ID ---
+    const chat_id =
+      sender_id < receiver_id
+        ? `${sender_id}_${receiver_id}`
+        : `${receiver_id}_${sender_id}`;
+
+    // --- INSERT MESSAGE ---
     const [r]: any = await db.query(
       `
       INSERT INTO messages 
@@ -59,21 +69,11 @@ router.post("/send", authenticate, async (req: any, res) => {
       [chat_id, sender_id, receiver_id, type, message, media_url, duration]
     );
 
-    /* Update last message of chat */
-    await db.query(
-      `
-      UPDATE chats
-      SET 
-        last_message = ?, 
-        last_message_at = NOW(),
-        unread_for_user1 = unread_for_user1 + IF(user1_id = ?, 0, 1),
-        unread_for_user2 = unread_for_user2 + IF(user2_id = ?, 0, 1)
-      WHERE id = ?
-      `,
-      [message || "[Media]", sender_id, sender_id, chat_id]
-    );
-
-    res.json({ success: true, message_id: r.insertId });
+    res.json({
+      success: true,
+      chat_id,         // return chat_id for frontend
+      message_id: r.insertId
+    });
 
   } catch (err) {
     console.error("SEND MESSAGE ERROR:", err);
