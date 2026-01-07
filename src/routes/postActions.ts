@@ -4,188 +4,176 @@ import { authenticate } from "../middleware/auth";
 
 const router = Router();
 
-/* ===============================
-   LIKE / UNLIKE POST
-================================ */
+/* ====================================================
+   LIKE / UNLIKE — DELETE & ADD SYSTEM
+==================================================== */
+router.post("/:reelId/like", authenticate, async (req: any, res: Response) => {
+  try {
+    const userId = req.user.id;
+    const reelId = Number(req.params.reelId);
 
+    const [[exists]]: any = await db.query(
+      "SELECT 1 FROM reel_likes WHERE user_id=? AND reel_id=?",
+      [userId, reelId]
+    );
 
-router.post(
-  "/:postId/like",
-  authenticate,
-  async (req: Request & { user?: any }, res: Response) => {
-    try {
-      const userId = req.user?.id;
-      const postId = Number(req.params.postId);
+    if (exists) {
+      await db.query("DELETE FROM reel_likes WHERE user_id=? AND reel_id=?", [
+        userId,
+        reelId,
+      ]);
 
-      if (!userId) {
-        return res.status(401).json({ success: false, error: "Unauthorized" });
-      }
-
-      if (!postId || isNaN(postId)) {
-        return res.status(400).json({ success: false, error: "Invalid post id" });
-      }
-
-      // 1️⃣ Check post exists
-      const [post]: any = await db.query(
-        "SELECT id FROM posts WHERE id = ?",
-        [postId]
+      await db.query(
+        "UPDATE reels SET likes_count = GREATEST(likes_count - 1, 0) WHERE id=?",
+        [reelId]
       );
 
-      if (!post.length) {
-        return res.status(404).json({ success: false, error: "Post not found" });
-      }
-
-      // 2️⃣ Check if already liked
-      const [exists]: any = await db.query(
-        "SELECT 1 FROM post_likes WHERE user_id=? AND post_id=?",
-        [userId, postId]
-      );
-
-      let liked: boolean;
-
-      if (exists.length) {
-        // UNLIKE
-        await db.query(
-          "DELETE FROM post_likes WHERE user_id=? AND post_id=?",
-          [userId, postId]
-        );
-
-        await db.query(
-          "UPDATE posts SET likes_count = GREATEST(likes_count - 1, 0) WHERE id=?",
-          [postId]
-        );
-
-        liked = false;
-      } else {
-        // LIKE
-        await db.query(
-          "INSERT INTO post_likes (user_id, post_id) VALUES (?, ?)",
-          [userId, postId]
-        );
-
-        await db.query(
-          "UPDATE posts SET likes_count = likes_count + 1 WHERE id=?",
-          [postId]
-        );
-
-        liked = true;
-      }
-
-      // 3️⃣ Get updated likes count
-      const [[countRow]]: any = await db.query(
-        "SELECT likes_count FROM posts WHERE id=?",
-        [postId]
-      );
-
-      return res.json({
-        success: true,
-        liked,                         // ✅ BOOLEAN
-        likes_count: Number(countRow.likes_count) // ✅ NUMBER
-      });
-
-    } catch (err: any) {
-      console.error("POST LIKE ERROR:", err);
-      return res.status(500).json({
-        success: false,
-        error: "Like failed",
-      });
+      return res.json({ liked: false });
     }
+
+    await db.query("INSERT INTO reel_likes (user_id, reel_id) VALUES (?, ?)", [
+      userId,
+      reelId,
+    ]);
+
+    await db.query("UPDATE reels SET likes_count = likes_count + 1 WHERE id=?", [
+      reelId,
+    ]);
+
+    res.json({ liked: true });
+  } catch (err) {
+    console.error("LIKE ERROR:", err);
+    res.status(500).json({ error: "Like failed" });
   }
-);
+});
 
-
-/* ===============================
-   COMMENT POST
-================================ */
+/* ====================================================
+   COMMENT — ALWAYS ADD ONLY
+==================================================== */
 router.post(
-  "/:postId/comment",
+  "/:reelId/comment",
   authenticate,
-  async (req: Request & { user?: any }, res: Response) => {
+  async (req: any, res: Response) => {
     try {
+      const userId = req.user.id;
+      const reelId = Number(req.params.reelId);
       const { comment } = req.body;
-      const userId = req.user!.id;
-      const postId = Number(req.params.postId);
 
       if (!comment || !comment.trim()) {
-        return res.status(400).json({ error: "Comment required" });
+        return res.status(400).json({ error: "Comment is required" });
       }
 
       await db.query(
-        "INSERT INTO post_comments (user_id, post_id, comment) VALUES (?, ?, ?)",
-        [userId, postId, comment.trim()]
+        "INSERT INTO reel_comments (user_id, reel_id, comment) VALUES (?, ?, ?)",
+        [userId, reelId, comment.trim()]
       );
 
       await db.query(
-        "UPDATE posts SET comments_count = comments_count + 1 WHERE id=?",
-        [postId]
+        "UPDATE reels SET comments_count = comments_count + 1 WHERE id=?",
+        [reelId]
       );
 
-      res.json({ message: "Comment added" });
+      res.json({ commented: true });
     } catch (err) {
-      console.error("POST COMMENT ERROR:", err);
+      console.error("COMMENT ERROR:", err);
       res.status(500).json({ error: "Comment failed" });
     }
   }
 );
 
-/* ===============================
-   SHARE POST
-================================ */
-router.post(
-  "/:postId/share",
-  authenticate,
-  async (req: Request, res: Response) => {
-    try {
-      const postId = Number(req.params.postId);
+/* ====================================================
+   SHARE — ALWAYS ADD ONLY
+==================================================== */
+router.post("/:reelId/share", authenticate, async (req: any, res: Response) => {
+  try {
+    const reelId = Number(req.params.reelId);
+
+    await db.query(
+      "UPDATE reels SET shares_count = shares_count + 1 WHERE id=?",
+      [reelId]
+    );
+
+    res.json({ shared: true });
+  } catch (err) {
+    console.error("SHARE ERROR:", err);
+    res.status(500).json({ error: "Share failed" });
+  }
+});
+
+/* ====================================================
+   SAVE / UNSAVE — DELETE & ADD SYSTEM
+==================================================== */
+router.post("/:reelId/save", authenticate, async (req: any, res: Response) => {
+  try {
+    const userId = req.user.id;
+    const reelId = Number(req.params.reelId);
+
+    const [[exists]]: any = await db.query(
+      "SELECT 1 FROM reel_saves WHERE user_id=? AND reel_id=?",
+      [userId, reelId]
+    );
+
+    if (exists) {
+      await db.query("DELETE FROM reel_saves WHERE user_id=? AND reel_id=?", [
+        userId,
+        reelId,
+      ]);
+      return res.json({ saved: false });
+    }
+
+    await db.query(
+      "INSERT INTO reel_saves (user_id, reel_id) VALUES (?, ?)",
+      [userId, reelId]
+    );
+
+    res.json({ saved: true });
+  } catch (err) {
+    console.error("SAVE ERROR:", err);
+    res.status(500).json({ error: "Save failed" });
+  }
+});
+
+/* ====================================================
+   VIEW + WATCH TIME — ADD ONCE + UPDATE
+==================================================== */
+router.post("/:reelId/view", authenticate, async (req: any, res: Response) => {
+  try {
+    const userId = req.user.id;
+    const reelId = Number(req.params.reelId);
+    const { watch_time } = req.body;
+
+    const seconds = Number(watch_time) || 0;
+
+    const [[exists]]: any = await db.query(
+      "SELECT 1 FROM reel_views WHERE user_id=? AND reel_id=?",
+      [userId, reelId]
+    );
+
+    if (!exists) {
+      await db.query(
+        "INSERT INTO reel_views (user_id, reel_id, watch_time) VALUES (?, ?, ?)",
+        [userId, reelId, seconds]
+      );
 
       await db.query(
-        "UPDATE posts SET shares_count = shares_count + 1 WHERE id=?",
-        [postId]
+        "UPDATE reels SET views_count = views_count + 1 WHERE id=?",
+        [reelId]
       );
 
-      res.json({ shared: true });
-    } catch (err) {
-      console.error("POST SHARE ERROR:", err);
-      res.status(500).json({ error: "Share failed" });
+      return res.json({ viewed: true });
     }
+
+    // update only if watch time increased
+    await db.query(
+      "UPDATE reel_views SET watch_time = GREATEST(watch_time, ?) WHERE user_id=? AND reel_id=?",
+      [seconds, userId, reelId]
+    );
+
+    res.json({ viewed: true });
+  } catch (err) {
+    console.error("VIEW ERROR:", err);
+    res.status(500).json({ error: "View failed" });
   }
-);
-
-/* ===============================
-   SAVE / UNSAVE POST
-================================ */
-router.post(
-  "/:postId/save",
-  authenticate,
-  async (req: Request & { user?: any }, res: Response) => {
-    try {
-      const userId = req.user!.id;
-      const postId = Number(req.params.postId);
-
-      const [exists]: any = await db.query(
-        "SELECT 1 FROM post_saves WHERE user_id=? AND post_id=?",
-        [userId, postId]
-      );
-
-      if (exists.length) {
-        await db.query(
-          "DELETE FROM post_saves WHERE user_id=? AND post_id=?",
-          [userId, postId]
-        );
-        return res.json({ saved: false });
-      }
-
-      await db.query(
-        "INSERT INTO post_saves (user_id, post_id) VALUES (?, ?)",
-        [userId, postId]
-      );
-
-      res.json({ saved: true });
-    } catch (err) {
-      console.error("POST SAVE ERROR:", err);
-      res.status(500).json({ error: "Save failed" });
-    }
-  }
-);
+});
 
 export default router;
