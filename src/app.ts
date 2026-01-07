@@ -49,7 +49,7 @@ app.use("/api/upload", uploadRouter);
 app.use("/api/reels_action", reelActionsRouter);
 app.use("/api/stories_action", storyActionsRouter);
 app.use("/api/story-details", storyDetailsRoutes);
-app.use("/api/users/profile", profileOtherRoutes);
+app.use("/api/profile", profileOtherRoutes);
 app.use("/api/stories", storySeenRouter);
 
 app.use(errorHandler);
