@@ -12,27 +12,30 @@ router.get("/:chatId", authenticate, async (req: any, res) => {
     const chatId = req.params.chatId;
     const userId = req.user.id;
 
-    /* Mark all as seen */
+    /* Mark messages of THIS chat as seen */
     await db.query(
       `
       UPDATE messages
       SET seen = 1
-      WHERE receiver_id = ?
-
+      WHERE chat_id = ? AND receiver_id = ?
       `,
       [chatId, userId]
     );
 
+    /* Load messages for chat */
     const [messages]: any = await db.query(
       `
-      SELECT * FROM messages
-      WHERE chat_id = ?
-      ORDER BY created_at ASC
+      SELECT m.*, u.username, u.profile_pic
+      FROM messages m
+      JOIN users u ON u.id = m.sender_id
+      WHERE m.chat_id = ?
+      ORDER BY m.created_at ASC
       `,
       [chatId]
     );
 
-    res.json(messages);
+    res.json({ success: true, data: messages });
+
   } catch (err) {
     console.error("LOAD MESSAGES ERROR:", err);
     res.status(500).json({ error: "Failed to fetch messages" });
@@ -56,19 +59,22 @@ router.post("/send", authenticate, async (req: any, res) => {
       [chat_id, sender_id, receiver_id, type, message, media_url, duration]
     );
 
-    /* Update chat last message info */
+    /* Update last message of chat */
     await db.query(
       `
       UPDATE chats
-      SET last_message = ?, last_message_at = NOW(),
-          unread_for_user1 = unread_for_user1 + IF(user1_id = ?, 0, 1),
-          unread_for_user2 = unread_for_user2 + IF(user2_id = ?, 0, 1)
+      SET 
+        last_message = ?, 
+        last_message_at = NOW(),
+        unread_for_user1 = unread_for_user1 + IF(user1_id = ?, 0, 1),
+        unread_for_user2 = unread_for_user2 + IF(user2_id = ?, 0, 1)
       WHERE id = ?
       `,
       [message || "[Media]", sender_id, sender_id, chat_id]
     );
 
     res.json({ success: true, message_id: r.insertId });
+
   } catch (err) {
     console.error("SEND MESSAGE ERROR:", err);
     res.status(500).json({ error: "Failed to send message" });
