@@ -6,7 +6,7 @@ import xss from "xss-clean";
 
 // ======== ROUTES ========
 import userRoutes from "./routes/user.routes";
-import reelsFeedRoutes from "./routes/reels_feed";
+import reelsFeedRoutes from "./routes/reels";
 import profileRoutes from "./routes/profile";
 import postActionsRouter from "./routes/postActions";
 import reelActionsRouter from "./routes/reelActions";
