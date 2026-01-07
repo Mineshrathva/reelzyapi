@@ -5,6 +5,99 @@ import crypto from "crypto";
 
 const router = Router();
 
+/* ===============================
+   INBOX - SHOW ALL CHATS
+================================ */
+router.get("/inbox", authenticate, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+
+    /* ============================
+       1. Fetch all chats user belongs to
+    ============================ */
+    const [chats]: any = await db.query(
+      `
+      SELECT 
+        c.chat_id,
+        c.userA,
+        c.userB,
+
+        /* identify the other person */
+        IF(c.userA = ?, c.userB, c.userA) AS other_user_id
+      FROM chats c
+      WHERE c.userA = ? OR c.userB = ?
+      ORDER BY c.created_at DESC
+      `,
+      [userId, userId, userId]
+    );
+
+    if (!chats.length) {
+      return res.json({ success: true, inbox: [] });
+    }
+
+    /* ============================
+       2. Prepare inbox response
+    ============================ */
+    const inbox = [];
+
+    for (const chat of chats) {
+      const otherId = chat.other_user_id;
+
+      /* Get other user info */
+      const [[otherUser]]: any = await db.query(
+        `
+        SELECT id, username, profile_pic 
+        FROM users 
+        WHERE id = ?
+        `,
+        [otherId]
+      );
+
+      /* Get last message */
+      const [[lastMsg]]: any = await db.query(
+        `
+        SELECT id, sender_id, message, media_url, type, created_at
+        FROM messages
+        WHERE chat_id = ?
+        ORDER BY created_at DESC
+        LIMIT 1
+        `,
+        [chat.chat_id]
+      );
+
+      /* Get unread messages count */
+      const [[unread]]: any = await db.query(
+        `
+        SELECT COUNT(*) AS unread
+        FROM messages
+        WHERE chat_id = ?
+          AND receiver_id = ?
+          AND seen = 0
+        `,
+        [chat.chat_id, userId]
+      );
+
+      inbox.push({
+        chat_id: chat.chat_id,
+        user: {
+          id: otherUser.id,
+          username: otherUser.username,
+          profile_pic: otherUser.profile_pic
+        },
+        last_message: lastMsg || null,
+        unread: unread.unread
+      });
+    }
+
+    res.json({ success: true, inbox });
+
+  } catch (err) {
+    console.error("INBOX ERROR:", err);
+    res.status(500).json({ error: "Failed to load inbox" });
+  }
+});
+
+
 /* ============================
    GET CHAT MESSAGES
 =============================== */
