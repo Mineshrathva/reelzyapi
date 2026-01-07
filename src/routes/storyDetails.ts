@@ -19,12 +19,18 @@ router.get("/user/:userId", authenticate, async (req: any, res) => {
         s.media_url,
         s.created_at,
 
+        u.id AS user_id,
+        u.username,
+        u.profile_pic,
+
         CASE
           WHEN sv.story_id IS NULL THEN 0
           ELSE 1
         END AS is_seen
 
       FROM stories s
+      JOIN users u ON u.id = s.user_id
+
       LEFT JOIN story_views sv
         ON sv.story_id = s.id
         AND sv.user_id = ?
@@ -38,7 +44,14 @@ router.get("/user/:userId", authenticate, async (req: any, res) => {
       [viewerId, storyUserId]
     );
 
-    res.json(stories);
+    res.json({
+      user: {
+        user_id: stories[0]?.user_id,
+        username: stories[0]?.username,
+        profile_pic: stories[0]?.profile_pic,
+      },
+      stories,
+    });
   } catch (err) {
     console.error("GET STORY DETAILS ERROR:", err);
     res.status(500).json({ error: "Failed to fetch user stories" });
