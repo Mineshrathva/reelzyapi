@@ -19,7 +19,7 @@ router.get("/", authenticate, async (req: any, res) => {
     u.username,
     u.name,
     u.bio,
-    u.profile_pic
+    u.profile_pic,
     /* followers (people following ME) */
     (SELECT COUNT(*) FROM follows WHERE following_id = u.id) AS followers_count,
 
