@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { db } from "../config/db";
 import { authenticate } from "../middleware/auth";
+import crypto from "crypto";
 
 const router = Router();
 
@@ -47,20 +48,41 @@ router.get("/:chatId", authenticate, async (req: any, res) => {
 =============================== */
 /* ============================
    SEND MESSAGE (AUTO-GENERATE chat_id)
+   
 =============================== */
+
+function generateChatId() {
+  return crypto.randomBytes(16).toString("hex"); // 32-char secure ID
+}
 router.post("/send", authenticate, async (req: any, res) => {
   try {
     const { receiver_id, message, media_url, type, duration } = req.body;
     const sender_id = req.user.id;
 
-    // --- AUTO GENERATE CHAT ID ---
-    const chat_id =
-      sender_id < receiver_id
-        ? `${sender_id}_${receiver_id}`
-        : `${receiver_id}_${sender_id}`;
+    /* Always use sorted pair for lookup */
+    const userA = Math.min(sender_id, receiver_id);
+    const userB = Math.max(sender_id, receiver_id);
 
-    // --- INSERT MESSAGE ---
-    const [r]: any = await db.query(
+    /* Check existing chat */
+    const [[existingChat]]: any = await db.query(
+      `SELECT chat_id FROM chats WHERE userA=? AND userB=?`,
+      [userA, userB]
+    );
+
+    let chat_id = existingChat?.chat_id;
+
+    /* If no chat, create new strong chat_id */
+    if (!chat_id) {
+      chat_id = generateChatId();
+
+      await db.query(
+        `INSERT INTO chats (chat_id, userA, userB) VALUES (?, ?, ?)`,
+        [chat_id, userA, userB]
+      );
+    }
+
+    /* Insert message */
+    const [result]: any = await db.query(
       `
       INSERT INTO messages 
       (chat_id, sender_id, receiver_id, type, message, media_url, duration)
@@ -71,8 +93,8 @@ router.post("/send", authenticate, async (req: any, res) => {
 
     res.json({
       success: true,
-      chat_id,         // return chat_id for frontend
-      message_id: r.insertId
+      chat_id,
+      message_id: result.insertId
     });
 
   } catch (err) {
@@ -80,6 +102,7 @@ router.post("/send", authenticate, async (req: any, res) => {
     res.status(500).json({ error: "Failed to send message" });
   }
 });
+
 
 /* ============================
    REACT TO MESSAGE
