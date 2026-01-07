@@ -21,6 +21,7 @@ router.get("/inbox", authenticate, async (req: any, res) => {
         c.chat_id,
         c.userA,
         c.userB,
+        c.chat_type,
 
         /* identify the other person */
         IF(c.userA = ?, c.userB, c.userA) AS other_user_id
