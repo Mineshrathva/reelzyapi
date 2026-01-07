@@ -15,9 +15,10 @@ router.get("/:chatId", authenticate, async (req: any, res) => {
     /* Mark all as seen */
     await db.query(
       `
-      UPDATE messages 
-      SET seen = 1 
-      WHERE chat_id = ? AND receiver_id = ?
+      UPDATE messages
+      SET seen = 1
+      WHERE receiver_id = ?
+
       `,
       [chatId, userId]
     );
