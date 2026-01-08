@@ -70,7 +70,7 @@ app.use("/api/profile", profileOtherRoutes);
 
 // POSTS
 app.use("/api/posts", postActionsRouter);
-app.use("/api/posts", exploreRoutes);
+app.use("/api/posts", getpostsRoutes);
 
 // REELS
 app.use("/api/reels", reelsFeedRoutes);
