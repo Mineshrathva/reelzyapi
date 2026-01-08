@@ -8,6 +8,10 @@ const router = Router();
 /* ===============================
    INBOX - SHOW ALL CHATS
 ================================ */
+
+/* ===============================
+   INBOX - SHOW ALL CHATS
+================================ */
 router.get("/inbox", authenticate, async (req: any, res) => {
   try {
     const userId = req.user.id;
@@ -16,33 +20,33 @@ router.get("/inbox", authenticate, async (req: any, res) => {
        1. Fetch all chats user belongs to
     ============================ */
     const [rows]: any = await db.query(
-  `
-  SELECT 
-    c.chat_id,
-    c.user1_id,
-    c.user2_id,
-    c.last_message,
-    c.last_message_at,
+      `
+      SELECT 
+        c.chat_id,
+        c.user1_id,
+        c.user2_id,
+        c.last_message,
+        c.last_message_at,
 
-    CASE WHEN c.user1_id = ? THEN c.unread_for_user1 
-         ELSE c.unread_for_user2 END AS unread,
+        CASE WHEN c.user1_id = ? THEN c.unread_for_user1 
+             ELSE c.unread_for_user2 END AS unread,
 
-    u.id AS other_user_id,
-    u.username,
-    u.profile_pic
+        u.id AS other_user_id,
+        u.username,
+        u.profile_pic
 
-  FROM chats c
-  JOIN users u 
-    ON u.id = IF(c.user1_id = ?, c.user2_id, c.user1_id)
+      FROM chats c
+      JOIN users u 
+        ON u.id = IF(c.user1_id = ?, c.user2_id, c.user1_id)
 
-  WHERE c.user1_id = ? OR c.user2_id = ?
-  ORDER BY c.last_message_at DESC
-  `,
-  [userId, userId, userId, userId]
-);
+      WHERE c.user1_id = ? OR c.user2_id = ?
+      ORDER BY c.last_message_at DESC
+      `,
+      [userId, userId, userId, userId]
+    );
 
-
-    if (!chats.length) {
+    // FIXED: rows instead of chats
+    if (!rows.length) {
       return res.json({ success: true, inbox: [] });
     }
 
@@ -51,7 +55,8 @@ router.get("/inbox", authenticate, async (req: any, res) => {
     ============================ */
     const inbox = [];
 
-    for (const chat of chats) {
+    // FIXED: rows instead of chats
+    for (const chat of rows) {
       const otherId = chat.other_user_id;
 
       /* Get other user info */
@@ -107,7 +112,6 @@ router.get("/inbox", authenticate, async (req: any, res) => {
     res.status(500).json({ error: "Failed to load inbox" });
   }
 });
-
 
 /* ============================
    GET CHAT MESSAGES
