@@ -15,22 +15,32 @@ router.get("/inbox", authenticate, async (req: any, res) => {
     /* ============================
        1. Fetch all chats user belongs to
     ============================ */
-    const [chats]: any = await db.query(
-      `
-      SELECT 
-        c.chat_id,
-        c.userA,
-        c.userB,
-        c.chat_type,
+    const [rows]: any = await db.query(
+  `
+  SELECT 
+    c.chat_id,
+    c.user1_id,
+    c.user2_id,
+    c.last_message,
+    c.last_message_at,
 
-        /* identify the other person */
-        IF(c.userA = ?, c.userB, c.userA) AS other_user_id
-      FROM chats c
-      WHERE c.userA = ? OR c.userB = ?
-      ORDER BY c.created_at DESC
-      `,
-      [userId, userId, userId]
-    );
+    CASE WHEN c.user1_id = ? THEN c.unread_for_user1 
+         ELSE c.unread_for_user2 END AS unread,
+
+    u.id AS other_user_id,
+    u.username,
+    u.profile_pic
+
+  FROM chats c
+  JOIN users u 
+    ON u.id = IF(c.user1_id = ?, c.user2_id, c.user1_id)
+
+  WHERE c.user1_id = ? OR c.user2_id = ?
+  ORDER BY c.last_message_at DESC
+  `,
+  [userId, userId, userId, userId]
+);
+
 
     if (!chats.length) {
       return res.json({ success: true, inbox: [] });
