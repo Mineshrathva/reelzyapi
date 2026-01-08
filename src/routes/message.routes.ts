@@ -197,6 +197,33 @@ router.post("/send", authenticate, async (req: any, res) => {
   }
 });
 
+/* ============================
+   MARK ALL MESSAGES AS SEEN
+=============================== */
+router.post("/seen", authenticate, async (req: any, res) => {
+  try {
+    const { userId } = req.body;   // sender user id
+    const receiverId = req.user.id;
+
+    if (!userId) {
+      return res.status(400).json({ error: "userId is required" });
+    }
+
+    await db.query(
+      `
+      UPDATE messages
+      SET seen = 1
+      WHERE sender_id = ? AND receiver_id = ?
+      `,
+      [userId, receiverId]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("SEEN ERROR:", err);
+    res.status(500).json({ error: "Failed to mark seen" });
+  }
+});
 
 /* ============================
    REACT TO MESSAGE
