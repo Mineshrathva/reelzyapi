@@ -12,7 +12,7 @@ import postActionsRouter from "./routes/postActions";
 import reelActionsRouter from "./routes/reelActions";
 import storiesFeedRoutes from "./routes/stories";
 import storyDetailsRoutes from "./routes/storyDetails";
-import exploreRoutes from "./routes/getpost";
+import getpostsRoutes from "./routes/getpost";
 import uploadRouter from "./routes/upload";
 import storyActionsRouter from "./routes/storyActions";
 import storySeenRouter from "./routes/storyViews";
