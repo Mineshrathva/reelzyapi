@@ -14,7 +14,7 @@ router.get("/", authenticate, async (req: any, res) => {
     const [rows]: any = await db.query(
       `
       SELECT 
-        c.id AS chat_id,
+       c.chat_id AS chat_id,
         c.user1_id,
         c.user2_id,
         c.last_message,
