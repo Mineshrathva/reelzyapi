@@ -65,7 +65,7 @@ app.use(express.json());
 app.use("/api/auth", userRoutes);
 
 // PROFILE
-app.use("/api/users/profile", profileRoutes);
+app.use("/api/myprofile", profileRoutes);
 app.use("/api/profile", profileOtherRoutes);
 
 // POSTS
