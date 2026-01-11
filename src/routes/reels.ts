@@ -16,7 +16,7 @@ router.get("/", authenticate, async (req: any, res) => {
         r.*,
         u.username,
         u.profile_pic,
-
+        r.type,
         -- repost flag
         EXISTS (
           SELECT 1
@@ -48,7 +48,6 @@ router.get("/", authenticate, async (req: any, res) => {
 
       FROM reels r
       JOIN users u ON u.id = r.user_id
-r.type
       ORDER BY score DESC
       LIMIT 20
     `;
