@@ -16,7 +16,6 @@ router.get("/", authenticate, async (req: any, res) => {
         r.*,
         u.username,
         u.profile_pic,
-        r.type,
         -- repost flag
         EXISTS (
           SELECT 1
