@@ -18,7 +18,7 @@ const upload = multer({
 router.post(
   "/:type",
   // authenticate, // Agar aapne auth middleware banaya hai toh ise enable rakhein
-  upload.array("files", 50), // "files" key use karein, max 50 files ek saath
+  upload.array("file", 150), // "files" key use karein, max 50 files ek saath
   async (req: Request & { user?: any }, res: Response) => {
     try {
       const { type } = req.params;
