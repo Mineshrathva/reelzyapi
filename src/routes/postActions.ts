@@ -4,8 +4,7 @@ import { authenticate } from "../middleware/auth";
 
 const router = Router();
 
-router.get("/:postId/likes", authenticate, async (req: any, res) => {
-
+router.get("/:postId/likes", authenticate, async (req, res) => {
   try {
     const postId = Number(req.params.postId);
 
@@ -18,16 +17,17 @@ router.get("/:postId/likes", authenticate, async (req: any, res) => {
       FROM post_likes pl
       JOIN users u ON u.id = pl.user_id
       WHERE pl.post_id=?
-      ORDER BY pl.user_id DESC,
+      ORDER BY pl.user_id DESC`,
       [req.user.id, postId]
     );
 
     res.json({ success: true, data: rows });
   } catch (e) {
-    console.error("POST LIKE ERROR:", e);
+    console.error("LIKES DETAILS:", e);
     res.status(500).json({ success: false });
   }
 });
+
 
 
 /* ====================================================
