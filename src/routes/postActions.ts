@@ -18,7 +18,7 @@ router.get("/:postId/likes", authenticate, async (req: any, res) => {
       FROM post_likes pl
       JOIN users u ON u.id = pl.user_id
       WHERE pl.post_id=?
-      ORDER BY pl.id DESC`,
+      ORDER BY pl.user_id DESC,
       [req.user.id, postId]
     );
 
