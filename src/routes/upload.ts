@@ -2,6 +2,7 @@ import { Request, Response, Router } from "express";
 import multer from "multer";
 import cloudinary from "../config/cloudinary";
 import { db } from "../config/db";
+import { authenticate } from "../middleware/auth";
 const router = Router();
 
 // Multer Memory Storage setup (Multiple files ke liye)
