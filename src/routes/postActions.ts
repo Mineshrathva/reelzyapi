@@ -4,6 +4,30 @@ import { authenticate } from "../middleware/auth";
 
 const router = Router();
 
+router.get("/:postId/likes", authenticate, async (req, res) => {
+  try {
+    const postId = Number(req.params.postId);
+
+    const [rows] = await db.query(
+      `SELECT u.id, u.username, u.profile_pic,
+      EXISTS(
+        SELECT 1 FROM follows f
+        WHERE f.follower_id=? AND f.following_id=u.id
+      ) AS is_following
+      FROM post_likes pl
+      JOIN users u ON u.id = pl.user_id
+      WHERE pl.post_id=?
+      ORDER BY pl.id DESC`,
+      [req.user.id, postId]
+    );
+
+    res.json({ success: true, data: rows });
+  } catch (e) {
+    res.status(500).json({ success: false });
+  }
+});
+
+
 /* ====================================================
    LIKE / UNLIKE — SAME LOGIC AS REELS
 ==================================================== */
