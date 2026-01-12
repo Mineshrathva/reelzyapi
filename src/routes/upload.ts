@@ -1,8 +1,7 @@
 import { Request, Response, Router } from "express";
 import multer from "multer";
-import cloudinary from "./cloudinaryConfig"; // Aapka cloudinary config path
-import db from "./dbConfig"; // Aapka database connection path
-
+import cloudinary from "../config/cloudinary";
+import { db } from "../config/db";
 const router = Router();
 
 // Multer Memory Storage setup (Multiple files ke liye)
