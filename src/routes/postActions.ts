@@ -24,6 +24,7 @@ router.get("/:postId/likes", authenticate, async (req: any, res) => {
 
     res.json({ success: true, data: rows });
   } catch (e) {
+    console.error("POST LIKE ERROR:", e);
     res.status(500).json({ success: false });
   }
 });
