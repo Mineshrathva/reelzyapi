@@ -8,8 +8,8 @@ router.get("/:postId/likes", authenticate, async (req, res) => {
   try {
     const postId = Number(req.params.postId);
 
-    const [rows] = await db.query(
-      `SELECT u.id, u.username, u.profile_pic,
+   const [rows] = await db.query(
+  `SELECT u.id, u.username, u.profile_pic,
       EXISTS(
         SELECT 1 FROM follows f
         WHERE f.follower_id=? AND f.following_id=u.id
@@ -17,9 +17,10 @@ router.get("/:postId/likes", authenticate, async (req, res) => {
       FROM post_likes pl
       JOIN users u ON u.id = pl.user_id
       WHERE pl.post_id=?
-      ORDER BY pl.user_id DESC`,
-      [req.user.id, postId]
-    );
+      ORDER BY pl.created_at DESC`,
+  [req.user.id, postId]
+);
+
 
     res.json({ success: true, data: rows });
   } catch (e) {
