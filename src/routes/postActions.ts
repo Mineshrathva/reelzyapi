@@ -4,7 +4,8 @@ import { authenticate } from "../middleware/auth";
 
 const router = Router();
 
-router.get("/:postId/likes", authenticate, async (req, res) => {
+router.get("/:postId/likes", authenticate, async (req: any, res) => {
+
   try {
     const postId = Number(req.params.postId);
 
